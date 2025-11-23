@@ -1,22 +1,21 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
 .env
 
 # Database
 *.db
 *.sqlite3
+database/data.db
 
 # Uploads
 uploads/*
 !uploads/.gitkeep
 
-# OS
+# OS & IDE
 .DS_Store
-
-# IDE
 .vscode/
 .idea/
-
