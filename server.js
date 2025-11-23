@@ -9,6 +9,7 @@ const iconv = require('iconv-lite');
 const xlsx = require('xlsx');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cors = require('cors');
+const stripBomStream = require('strip-bom-stream');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -55,31 +56,45 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Helper: Parse CSV with Encoding Detection
+// Helper: Parse CSV with strict BOM handling
 function parseCSV(filePath) {
     return new Promise((resolve, reject) => {
         const results = [];
-        const content = fs.readFileSync(filePath);
         
-        // Try UTF-8 first
-        let str = iconv.decode(content, 'utf8');
-        // Simple heuristic: if looks like garbage or has  replacement chars in common words, try Big5
-        // For simplicity, let's rely on user feedback or a more robust check.
-        // However, we can try to detect common Chinese characters.
-        // If it contains many replacement characters, try Big5.
-        if (str.includes('') && !str.includes('ï»¿')) { // ï»¿ is BOM
-             // Try Big5
-             str = iconv.decode(content, 'big5');
+        // Read file buffer
+        const buffer = fs.readFileSync(filePath);
+        let str;
+
+        // Check for UTF-8 BOM (EF BB BF)
+        if (buffer.length >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+            // Slice off BOM and decode as UTF-8
+            str = iconv.decode(buffer.slice(3), 'utf8');
+        } else {
+            // No UTF-8 BOM, try Big5 detection heuristic or default to UTF-8
+            // Simple check: try decoding as UTF-8, if it has replacement chars, fallback to Big5
+            const utf8Str = iconv.decode(buffer, 'utf8');
+            if (utf8Str.includes('') && !utf8Str.includes('ï»¿')) {
+                str = iconv.decode(buffer, 'big5');
+            } else {
+                str = utf8Str;
+            }
         }
 
-        // Using a stream from the string buffer
         const stream = require('stream');
         const bufferStream = new stream.PassThrough();
         bufferStream.end(str);
 
         bufferStream
-            .pipe(csv())
-            .on('data', (data) => results.push(data))
+            .pipe(csv({
+                mapHeaders: ({ header }) => header.trim() // Trim headers
+            }))
+            .on('data', (data) => {
+                const cleanData = {};
+                Object.keys(data).forEach(key => {
+                    cleanData[key.trim()] = data[key];
+                });
+                results.push(cleanData);
+            })
             .on('end', () => resolve(results))
             .on('error', (err) => reject(err));
     });
@@ -121,7 +136,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                 id: this.lastID,
                 filename: req.file.originalname,
                 rowCount: data.length,
-                data: data.slice(0, 1000) // Return first 1000 rows for preview to avoid payload too large
+                data: data.slice(0, 1000)
             });
         });
         stmt.finalize();
@@ -142,18 +157,14 @@ app.get('/api/history', (req, res) => {
 // 3. Delete History
 app.delete('/api/history/:id', (req, res) => {
     const id = req.params.id;
-    
-    // First get file path to delete file
     db.get("SELECT file_path FROM uploads WHERE id = ?", [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: "Record not found" });
 
-        // Delete file
         if (row.file_path && fs.existsSync(row.file_path)) {
             fs.unlinkSync(row.file_path);
         }
 
-        // Delete DB records
         db.serialize(() => {
             db.run("DELETE FROM analysis_reports WHERE upload_id = ?", [id]);
             db.run("DELETE FROM uploads WHERE id = ?", [id], (err) => {
@@ -181,12 +192,11 @@ app.get('/api/data/:id', async (req, res) => {
             if (ext === '.csv') data = await parseCSV(row.file_path);
             else data = parseExcel(row.file_path);
             
-            // Fetch existing report if any
             db.get("SELECT report_content FROM analysis_reports WHERE upload_id = ? ORDER BY created_at DESC LIMIT 1", [id], (err, reportRow) => {
                 res.json({
                     id: row.id,
                     filename: row.filename,
-                    data: data.slice(0, 1000), // Limit for performance
+                    data: data.slice(0, 1000), 
                     savedReport: reportRow ? reportRow.report_content : null
                 });
             });
@@ -207,8 +217,8 @@ app.post('/api/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        // Use a widely available model
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Strictly follow user's request to use gemini-2.5-flash
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
         作為一名專業的商業數據分析師，請根據以下數據摘要進行分析。
@@ -229,7 +239,6 @@ app.post('/api/analyze', async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
-        // Save Report
         db.run("INSERT INTO analysis_reports (upload_id, report_content) VALUES (?, ?)", [uploadId, text], function(err) {
             if (err) console.error("Failed to save report", err);
         });
@@ -245,4 +254,3 @@ app.post('/api/analyze', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
-
