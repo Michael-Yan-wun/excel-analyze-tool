@@ -3,279 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>資料分析平台 | Data Analytics</title>
+    <title>Data Insight Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        }
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in { animation: fadeIn 0.3s ease; }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #e5e7eb;
-            border-top-color: #2563eb;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-    </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed left-0 top-0 h-screen w-70 bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
-        <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center gap-3">
-                <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 3v18h18"/>
-                    <path d="M7 12l4-4 4 4 4-4"/>
-                </svg>
-                <h2 class="text-xl font-bold text-gray-900">Data Analytics</h2>
+<body class="bg-white text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar: History -->
+    <aside class="w-72 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300" id="sidebar">
+        <div class="p-6 border-b border-slate-200">
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Data Insight
+            </h1>
+        </div>
+        
+        <!-- Upload Area (Compact) -->
+        <div class="p-4">
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-colors group">
+                <input type="file" id="fileInput" class="hidden" accept=".csv, .xlsx, .xls">
+                <svg class="w-8 h-8 mx-auto text-slate-400 group-hover:text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <p class="text-sm font-medium text-slate-600 group-hover:text-brand-600">點擊或拖曳上傳</p>
+                <p class="text-xs text-slate-400 mt-1">支援 Excel, CSV (Big5/UTF8)</p>
             </div>
         </div>
 
-        <nav class="flex-1 overflow-y-auto py-5">
-            <div class="mb-8">
-                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 mb-3">資料管理</h3>
-                <button class="nav-item w-full flex items-center gap-3 px-5 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200 text-sm font-medium active" data-tab="upload">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    <span>上傳資料</span>
-                </button>
-                <button class="nav-item w-full flex items-center gap-3 px-5 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200 text-sm font-medium" data-tab="data">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="3" y1="9" x2="21" y2="9"/>
-                        <line x1="9" y1="21" x2="9" y2="9"/>
-                    </svg>
-                    <span>資料檢視</span>
-                </button>
-                <button class="nav-item w-full flex items-center gap-3 px-5 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200 text-sm font-medium" data-tab="visualization">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                    <span>視覺化分析</span>
-                </button>
-            </div>
-
-            <div class="mb-8">
-                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 mb-3">歷史記錄</h3>
-                <div id="historyList" class="px-3">
-                    <div class="py-5 text-center text-sm text-gray-500">尚無歷史記錄</div>
-                </div>
-            </div>
-        </nav>
-
-        <div class="p-5 border-t border-gray-200">
-            <div id="fileInfoCompact" class="bg-gray-50 border border-gray-200 rounded-lg p-3" style="display: none;">
-                <div class="flex items-center gap-2 mb-2 text-sm font-medium text-gray-900">
-                    <svg class="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                    <span id="currentFileNameCompact">檔案名稱</span>
-                </div>
-                <div class="text-xs text-gray-600">
-                    <span id="currentRowCountCompact">0</span> 筆資料
-                </div>
-            </div>
+        <div class="px-6 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">歷史記錄</div>
+        <div class="flex-1 overflow-y-auto px-4 pb-4 space-y-2" id="historyList">
+            <!-- History Items injected here -->
+            <div class="text-center py-4 text-slate-400 text-sm">載入中...</div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="ml-70 min-h-screen bg-gray-50 transition-all duration-300">
+    <main class="flex-1 flex flex-col h-full relative bg-white">
+        
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 px-8 py-5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
-            <h1 class="text-2xl font-bold text-gray-900">資料分析平台</h1>
-            <div class="flex gap-3">
-                <button id="sidebarToggle" class="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:border-blue-300 transition-all duration-200" title="切換側邊欄">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="12" x2="21" y2="12"/>
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
+        <header class="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-white z-10">
+            <div class="flex items-center gap-4">
+                <button id="toggleSidebar" class="p-2 rounded-md hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
+                <div>
+                    <h2 id="currentFileName" class="text-lg font-semibold text-slate-800">請選擇或上傳檔案</h2>
+                    <p id="fileMeta" class="text-xs text-slate-500 hidden">0 rows • Analyzed just now</p>
+                </div>
             </div>
+            
+            <!-- Tab Navigation -->
+            <nav class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
+                <button class="tab-btn active px-4 py-1.5 text-sm font-medium rounded-md transition-all" data-tab="raw">原始資料</button>
+                <button class="tab-btn px-4 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-700" data-tab="charts">圖表洞察</button>
+                <button class="tab-btn px-4 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-700" data-tab="report">AI 分析報告</button>
+            </nav>
         </header>
 
-        <!-- Upload Tab -->
-        <div class="tab-content p-8 fade-in active" id="uploadTab">
-            <div class="max-w-2xl mx-auto">
-                <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center transition-all duration-300 hover:border-blue-300 hover:shadow-lg">
-                    <div class="mb-6">
-                        <svg class="w-16 h-16 mx-auto text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">上傳資料檔案</h2>
-                    <p class="text-gray-600 mb-8 text-sm">支援 Excel (.xlsx, .xls) 和 CSV 格式</p>
-                    <div id="uploadArea" class="border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50 transition-all duration-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50">
-                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md" onclick="document.getElementById('fileInput').click()">
-                            選擇檔案
-                        </button>
-                        <p class="mt-3 text-sm text-gray-600">或拖曳檔案到此處</p>
-                    </div>
-                    <div id="uploadProgress" class="mt-6" style="display: none;">
-                        <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
-                            <div id="progressFill" class="h-full bg-gradient-to-r from-blue-600 to-blue-500 transition-all duration-300" style="width: 0%;"></div>
+        <!-- Content Area -->
+        <div class="flex-1 overflow-hidden relative">
+            
+            <!-- Tab: Raw Data -->
+            <div id="tab-raw" class="tab-content h-full flex flex-col p-6 overflow-hidden">
+                <div class="bg-white border border-slate-200 rounded-lg shadow-sm flex-1 overflow-hidden flex flex-col">
+                    <div class="overflow-auto flex-1" id="tableContainer">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50 sticky top-0 z-10" id="tableHead"></thead>
+                            <tbody class="bg-white divide-y divide-slate-200" id="tableBody"></tbody>
+                        </table>
+                        <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400">
+                            <svg class="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                            <p>尚無資料顯示</p>
                         </div>
-                        <p class="text-sm text-gray-600">正在處理檔案...</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Data Tab -->
-        <div class="tab-content p-8 hidden" id="dataTab">
-            <div class="inline-flex gap-2 mb-6 bg-white border border-gray-200 rounded-xl p-1.5">
-                <button class="data-subtab-button px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active bg-blue-50 text-blue-700" data-panel="tablePanel">原始資料</button>
-                <button class="data-subtab-button px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-900" data-panel="statsPanel">敘述統計</button>
-                <button class="data-subtab-button px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-900" data-panel="analysisPanel">AI 分析</button>
+            <!-- Tab: Charts -->
+            <div id="tab-charts" class="tab-content hidden h-full p-6 overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Chart 1: Distribution -->
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                        <h3 class="text-base font-semibold text-slate-800 mb-4">品質分佈 (Quality Distribution)</h3>
+                        <div id="chart-bar" class="w-full h-64"></div>
+                    </div>
+                    <!-- Chart 2: Alcohol vs Quality -->
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                        <h3 class="text-base font-semibold text-slate-800 mb-4">酒精濃度與品質關係 (Alcohol vs Quality)</h3>
+                        <div id="chart-scatter" class="w-full h-64"></div>
+                    </div>
+                    <!-- Chart 3: Acidity -->
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                        <h3 class="text-base font-semibold text-slate-800 mb-4">酸度組成 (Acidity Composition)</h3>
+                        <div id="chart-pie" class="w-full h-64"></div>
+                    </div>
+                     <!-- Chart 4: Sugar Trend -->
+                     <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                        <h3 class="text-base font-semibold text-slate-800 mb-4">殘糖含量 (Residual Sugar)</h3>
+                        <div id="chart-line" class="w-full h-64"></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="data-panel active" id="tablePanel">
-                <div class="mb-12">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">資料檢視</h2>
-                        <div class="flex gap-3">
-                            <div class="relative flex-1 max-w-md">
-                                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="m21 21-4.35-4.35"/>
-                                </svg>
-                                <input type="text" id="searchInput" placeholder="搜尋資料..." class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <!-- Tab: AI Report -->
+            <div id="tab-report" class="tab-content hidden h-full p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8 min-h-[500px]">
+                        <div class="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-900">AI 智能分析報告</h2>
+                                    <p class="text-sm text-slate-500">Powered by Google Gemini</p>
+                                </div>
+                            </div>
+                            <button id="generateReportBtn" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
+                                <span id="btnText">生成分析報告</span>
+                                <svg id="btnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div id="reportContent" class="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-brand-600">
+                            <div class="text-center py-20 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                請點擊右上角按鈕開始分析目前的數據集
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden overflow-x-auto shadow-sm">
-                        <table id="dataTable" class="w-full border-collapse">
-                            <thead id="tableHead" class="bg-gray-50"></thead>
-                            <tbody id="tableBody" class="bg-white"></tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
-            <div class="data-panel hidden" id="statsPanel">
-                <div class="mb-12">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">敘述統計</h2>
-                    </div>
-                    <div id="statsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-                </div>
-            </div>
-
-            <div class="data-panel hidden" id="analysisPanel">
-                <div class="mb-12">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">AI 分析報告</h2>
-                        <button id="generateOverallAnalysisBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                            </svg>
-                            產生分析報告
-                        </button>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 transition-all duration-300 hover:border-blue-300">
-                        <div id="overallAnalysisLoading" class="spinner mx-auto" style="display: none;"></div>
-                        <div id="overallAnalysisContent" class="text-gray-700 leading-relaxed whitespace-pre-wrap min-h-[50px] text-sm"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Visualization Tab -->
-        <div class="tab-content p-8 hidden" id="visualizationTab">
-            <div class="mb-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">酒精濃度與平均品質趨勢</h2>
-                    <p class="text-sm text-gray-600">將酒精濃度以 0.5% 區間分組，觀察平均品質變化</p>
-                </div>
-                <div id="lineChartContainer" class="bg-white border border-gray-200 rounded-xl p-6 min-h-[400px] transition-all duration-300 hover:border-blue-300 hover:shadow-md relative">
-                    <div id="lineChartLoading" class="spinner mx-auto"></div>
-                </div>
-                <div id="lineChartInsight" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700"></div>
-            </div>
-
-            <div class="mb-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">品質等級分佈</h2>
-                    <p class="text-sm text-gray-600">統計品質評分 3-8 分的樣本數，掌握資料結構</p>
-                </div>
-                <div id="barChartContainer" class="bg-white border border-gray-200 rounded-xl p-6 min-h-[400px] transition-all duration-300 hover:border-blue-300 hover:shadow-md relative">
-                    <div id="barChartLoading" class="spinner mx-auto"></div>
-                </div>
-                <div id="barChartInsight" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700"></div>
-            </div>
-
-            <div class="mb-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">殘糖含量分佈</h2>
-                    <p class="text-sm text-gray-600">以常見甜度區間呈現紅酒殘糖（g/L）比例</p>
-                </div>
-                <div id="areaChartContainer" class="bg-white border border-gray-200 rounded-xl p-6 min-h-[400px] transition-all duration-300 hover:border-blue-300 hover:shadow-md relative">
-                    <div id="areaChartLoading" class="spinner mx-auto"></div>
-                </div>
-                <div id="areaChartInsight" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700"></div>
-            </div>
-
-            <div class="mb-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">酸度互動散佈圖</h2>
-                    <p class="text-sm text-gray-600">比較揮發性酸與檸檬酸，氣泡大小代表品質</p>
-                </div>
-                <div id="scatterChartContainer" class="bg-white border border-gray-200 rounded-xl p-6 min-h-[400px] transition-all duration-300 hover:border-blue-300 hover:shadow-md relative">
-                    <div id="scatterChartLoading" class="spinner mx-auto"></div>
-                </div>
-                <div id="scatterChartInsight" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700"></div>
-            </div>
-
-            <div class="mb-12">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900">整體分析報告</h2>
-                    <button id="generateOverallVisualizationAnalysisBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                        產生整體報告
-                    </button>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-xl p-6 transition-all duration-300 hover:border-blue-300">
-                    <div id="overallVisualizationAnalysisLoading" class="spinner mx-auto" style="display: none;"></div>
-                    <div id="overallVisualizationAnalysisContent" class="text-gray-700 leading-relaxed whitespace-pre-wrap min-h-[50px] text-sm"></div>
-                </div>
-            </div>
         </div>
     </main>
 
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/charts.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
